@@ -1,5 +1,4 @@
-import constants
-import nodes
+import _nodes
 import _tokens
 import typing
 
@@ -8,7 +7,7 @@ import typing
 class Parser:
     def __init__(self, tokens: typing.List["_tokens.Token"]):
         self.tokens = tokens
-        self.token_index = 1
+        self.token_index = -1
         self.current_token: typing.Optional["_tokens.Token"] = None
         self.advance()
 
@@ -22,27 +21,28 @@ class Parser:
         result = self.expression()
         return result
 
-    def factor(self) -> "nodes.NumberNode":
+    def factor(self) -> "_nodes.NumberNode":
         token = self.current_token
         
-        if token.token_type in (constants.TOKEN_TYPE_INT, constants.TOKEN_TYPE_FLOAT):
+        if token._type in (_tokens.TokenType.INT, _tokens.TokenType.FLOAT):
             self.advance()
-            return nodes.NumberNode(token)
+            return _nodes.NumberNode(token)
 
-    def term(self) -> "nodes.BinaryOperationNode":
-        return self.binary_operation(self.factor, (constants.TOKEN_TYPE_DIV, constants.TOKEN_TYPE_MUL))
+    def term(self) -> "_nodes.BinaryOperationNode":
+        return self.binary_operation(self.factor, (_tokens.TokenType.DIV, _tokens.TokenType.MUL))
        
-    def expression(self) -> "nodes.BinaryOperationNode":
-        return self.binary_operation(self.term, (constants.TOKEN_TYPE_PLUS, constants.TOKEN_TYPE_MINUS))
+    def expression(self) -> "_nodes.BinaryOperationNode":
+        return self.binary_operation(self.term, (_tokens.TokenType.PLUS, _tokens.TokenType.MINUS))
     
     def binary_operation(self,
-                         func: typing.Callable[[], typing.Union['nodes.NumberNode', 'nodes.BinaryOperationNode']],
-                         operation_tokens: typing.List[str]) -> "nodes.BinaryOperationNode":
-        left: "nodes.NumberNode" | "nodes.BinaryOperationNode" = func()
+                         func: typing.Callable[[], typing.Union['_nodes.NumberNode', '_nodes.BinaryOperationNode']],
+                         operation_tokens: typing.List[str]) -> "_nodes.BinaryOperationNode":
+        left: "_nodes.NumberNode" | "_nodes.BinaryOperationNode" = func()
         
-        while self.current_token in operation_tokens:
+        while self.current_token._type in operation_tokens:
             operation_token: None | "_tokens.Token" = self.current_token
-            right: "nodes.NumberNode" = func()
-            left = nodes.BinaryOperationNode(left, operation_token, right)
+            self.advance()
+            right: "_nodes.NumberNode" = func()
+            left = _nodes.BinaryOperationNode(left, operation_token, right)
         
         return left

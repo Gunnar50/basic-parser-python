@@ -1,25 +1,7 @@
-from constants import *
-from typing import List, Union, Tuple, Optional
+import typing
 import _tokens
-
-
-# ERRORS
-
-class Error:
-    def __init__(self, error_name: str, details: str, pos_start: "Position", pos_end: "Position") -> None:
-        self.error_name = error_name
-        self.details = details
-        self.pos_start = pos_start
-        self.pos_end = pos_end
-
-    def __repr__(self) -> str:
-        return f"{self.error_name}: {self.details}\nFile {self.pos_start.file_name}, line {self.pos_start.line_number + 1}"
-
-
-class IllegalCharError(Error):
-    def __init__(self, details: str, pos_start: "Position", pos_end: "Position") -> None:
-        super().__init__("Illegal Character", details, pos_start, pos_end)
-
+import constants
+import _errors
 
 # POSITION
 
@@ -62,37 +44,37 @@ class Lexer:
         else:
             self.current_char = None
 
-    def make_tokens(self) -> Tuple[Union[List[_tokens.Token], List[None]], Optional[Error]]:
+    def make_tokens(self) -> typing.Tuple[typing.Union[typing.List[_tokens.Token], typing.List[None]], typing.Optional["_errors.Error"]]:
         tokens: list[_tokens.Token] = []
 
         while self.current_char is not None:
             if self.current_char in " \t":
                 self.advance()
-            elif self.current_char in DIGITS:
+            elif self.current_char in constants.DIGITS:
                 tokens.append(self.make_number())
             elif self.current_char == "+":
-                tokens.append(_tokens.Token(TOKEN_TYPE_PLUS))
+                tokens.append(_tokens.Token(_tokens.TokenType.PLUS))
                 self.advance()
             elif self.current_char == "-":
-                tokens.append(_tokens.Token(TOKEN_TYPE_MINUS))
+                tokens.append(_tokens.Token(_tokens.TokenType.MINUS))
                 self.advance()
             elif self.current_char == "*":
-                tokens.append(_tokens.Token(TOKEN_TYPE_MUL))
+                tokens.append(_tokens.Token(_tokens.TokenType.MUL))
                 self.advance()
             elif self.current_char == "/":
-                tokens.append(_tokens.Token(TOKEN_TYPE_DIV))
+                tokens.append(_tokens.Token(_tokens.TokenType.DIV))
                 self.advance()
             elif self.current_char == "(":
-                tokens.append(_tokens.Token(TOKEN_TYPE_LPAREN))
+                tokens.append(_tokens.Token(_tokens.TokenType.LPAREN))
                 self.advance()
             elif self.current_char == ")":
-                tokens.append(_tokens.Token(TOKEN_TYPE_RPAREN))
+                tokens.append(_tokens.Token(_tokens.TokenType.RPAREN))
                 self.advance()
             else:
                 pos_start = self.pos.copy()
                 char = self.current_char
                 self.advance()
-                return [], IllegalCharError(f'"{char}"', pos_start, self.pos)
+                return [], _errors.IllegalCharError(f'"{char}"', pos_start, self.pos)
 
         return tokens, None
 
@@ -100,7 +82,7 @@ class Lexer:
         num = ""
         dot_count = 0
 
-        while self.current_char is not None and self.current_char in DIGITS + ".":
+        while self.current_char is not None and self.current_char in constants.DIGITS + ".":
             if self.current_char == ".":
                 if dot_count == 1:
                     break
@@ -111,16 +93,9 @@ class Lexer:
             self.advance()
 
         if dot_count:
-            return _tokens.Token(TOKEN_TYPE_FLOAT, float(num))
+            return _tokens.Token(_tokens.TokenType.FLOAT, float(num))
 
-        return _tokens.Token(TOKEN_TYPE_INT, int(num))
-
-
+        return _tokens.Token(_tokens.TokenType.INT, int(num))
 
 
-# RUN
-def run(text: str, file_name: str):
-    lexer = Lexer(text, file_name)
-    tokens, error = lexer.make_tokens()
 
-    return tokens, error
